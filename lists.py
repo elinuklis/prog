@@ -14,7 +14,7 @@ class Viesis:
         print(self.__id)
 
 class Darbinieks(Viesis):
-    def drukaaVardu(self):
+    def drukaVardu(self):
         print("Administrators " +f"{self.vards}"+" izveidots")
 
 vards = "Elina"
