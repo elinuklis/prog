@@ -1,0 +1,108 @@
+import PySimpleGUI as sg
+from datetime import datetime
+
+class Noma:
+    def __init__(self, prod_kategorija='', prod_nosaukums='', tehn_raksturojumi='', nomas_cena=0.0):
+        self.Produkta_kategorija = prod_kategorija
+        self.Produkta_nosaukums = prod_nosaukums
+        self.Tehniskie_raksturojumi = tehn_raksturojumi
+        self.Nomas_cena_diena = nomas_cena
+        self.Produkts_pieejams = True
+        self.Nomnieks_vards = ''
+        self.Nomnieks_uzvards = ''
+        self.Nomnieks_persk = ''
+        self.Nomnieks_telnr = ''
+        self.Nomas_sak_datums = None
+        self.Nomas_beigu_datums = None
+
+    def Nomas_atlikusais_laiks(self):
+        return (self.Nomas_beigu_datums - datetime.now()).days
+    
+    def Cena_kopa(self):
+        dienas = (self.Nomas_beigu_datums - self.Nomas_sak_datums).days
+        return dienas * self.Nomas_cena_diena
+    
+    def Produkta_info(self):
+        return (f"Kategorija: {self.Produkta_kategorija},"
+                f"Nosaukums: {self.Produkta_nosaukums},"
+                f"Tehniskie raksturojumi: {self.Tehniskie_raksturojumi}"
+                f"Cena dienā: {self.Nomas_cena_diena}"
+                f"Pieejams: {'Jā' if self.Produkts_pieejams else 'Nē'}")
+    
+    def Nomnieks_info(self):
+        return (f"Vārds: {self.Nomnieks_vards}, Uzvārds: {self.Nomnieks_uzvards}, "
+                f"Personas kods: {self.Nomnieks_persk}, Telefona nr.: {self.Nomnieks_telnr}")
+    
+    def Saglabat(self, faila_nosaukums):
+        with open(faila_nosaukums, 'w', encoding='utf-8') as file:
+            file.write('Produkta informācija:\n')
+            file.write(self.Produkta_info() + '\n')
+            file.write('Nomnieka informácija:\n')
+            file.write(self.Nomnieks_info()+ '\n')
+            file.write(f'Kopējā cena: {self.Cena_kopa()} EUR\n')
+            atlikusais_laiks = self.Nomas_atlikusais_laiks()
+            file.write(f'Atlikušais laiks: {atlikusais_laiks} dienas\n' if atlikusais_laiks>= 0 else 'Nomas termiņš ir beidzies.\n')
+    
+def programma():
+    layout = [
+        [sg.Text('Produkta kategorija'), sg.InputText(key='-PRODUKTA_KATEGORIJA-')],
+        [sg.Text('Produkta nosaukums'), sg.InputText(key='-PRODUKTA_NOSAUKUMS-')],
+        [sg.Text('Tehniskie Raksturojumi'), sg.InputText(key='-TEHNISKIE_RAKSTUROJUMI-')],
+        [sg.Text('Nomas cena dienā (EUR)'), sg.InputText(key='-NOMAS_CENA-')],
+        [sg.Text('Nomnieka vārds'), sg.InputText(key='-NOMNIEKS_VARDS-')],
+        [sg.Text('Nomnieka uzvārds'), sg.InputText(key='-NOMNIEKS_UZVARDS-')],
+        [sg.Text('Nomnieka personas kods'), sg.InputText(key='-NOMNIEKS_PERSK-')],
+        [sg.Text('Nomnieka telefona numurs'), sg.InputText(key='-NOMNIEKS_TEL_NR-')],
+        [sg.Text('Nomas sākuma datums (DD.MM.GGGG)'), sg.InputText(key='-NOMAS_SAK_DATUMS-')],
+        [sg.Text('Nomas beigu datums (DD.MM.GGGG)'), sg.InputText(key='-NOMAS_BEIGU_DATUMS-')],
+        [sg.Button('Pievienot'), sg.Button('Izvadīt'), sg.Button('Iziet')]
+    ]
+
+    window = sg.Window('Instrumentu un tehnikas noma', layout)
+
+    produkts = None
+
+    while True:
+        event, values = window.read()
+
+        if event== sg.WIN_CLOSED or event == 'Iziet':
+            break
+
+        if event == 'Pievienot':
+            produkts = Noma(
+                prod_kategorija = values['-PRODUKTA_KATEGORIJA-'],
+                prod_nosaukums = values['-PRODUKTA_NOSAUKUMS-'],
+                tehn_raksturojumi = values['-TEHNISKIE_RAKSTUROJUMI-'],
+                nomas_cena = float(values['-NOMAS_CENA-'])
+            )
+
+            produkts.Nomnieks_vards = values['-NOMNIEKS_VARDS-']
+            produkts.Nomnieks_uzvards=values['-NOMNIEKS_UZVARDS-']
+            produkts.Nomnieks_persk=values['-NOMNIEKS_PERSK-']
+            produkts.Nomnieks_telnr=values['-NOMNIEKS_TEL_NR-']
+            produkts.Nomas_sak_datums=datetime.strptime(values['-NOMAS_SAK_DATUMS-'], '%d.%m.%Y')
+            produkts.Nomas_beigu_datums=datetime.strptime(values['-NOMAS_BEIGU_DATUMS-'], '%d.%m.%Y')
+
+            produkts.Saglabat('nomas_atskaite.txt')
+            sg.popup('Produkta un nomnieka informācija pievienota!', title='Informācija')
+            
+
+        if event== 'Izvadīt' and produkts:
+            produkta_info = produkts.Produkta_info()
+            nomnieka_info = produkts.Nomnieks_info()
+            kopeja_cena = produkts.Cena_kopa()
+            atlikusais_laiks = produkts.Nomas_atlikusais_laiks()
+            info = (f'{produkta_info}\n'
+                    f'{nomnieka_info}\n'
+                    f'Kopējā cena: {kopeja_cena} EUR\n'
+                    f'Atlikušais laiks: {atlikusais_laiks} dienas' if atlikusais_laiks>= 0 else 'Nomas termiņš ir beidzies.')
+            sg.popup(info, title='Informācija par nomas produktu un nomnieku')
+        else:
+            sg.popup('Nav pievienota nekāda informācija par nomu vai nomnieku.', title='!!!')
+
+
+
+    window.close()
+
+if __name__ == "__main__":
+    programma()
